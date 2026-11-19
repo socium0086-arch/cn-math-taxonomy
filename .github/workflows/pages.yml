@@ -10,6 +10,9 @@ permissions:
   pages: write
   id-token: write
 
+# Sole Pages deployer for this repo. Do not add a second workflow that also
+# uploads to github-pages (e.g. the "Deploy static content to Pages" starter):
+# that uploads the raw tree without generated kp/ and can overwrite a good deploy.
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -30,6 +33,21 @@ jobs:
           HTML_SUFFIX: "1"
         run: ./scripts/prepare-gh-pages.sh "$RUNNER_TEMP/site"
 
+      - name: Verify project-site entrypoints
+        run: |
+          set -euo pipefail
+          SITE="$RUNNER_TEMP/site"
+          test -f "$SITE/index.html"
+          test -f "$SITE/.nojekyll"
+          test -d "$SITE/explore"
+          test -d "$SITE/diagnose"
+          test -d "$SITE/kp"
+          test -f "$SITE/data/topics.json"
+          # Relative asset + kp links (must work under /cn-math-taxonomy/)
+          grep -q 'href="assets/site.css"' "$SITE/index.html"
+          grep -q 'href="../assets/site.css"' "$SITE/kp/index.html"
+          echo "Entrypoints OK for https://socium0086-arch.github.io/cn-math-taxonomy/"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -42,6 +60,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Remind if Pages not enabled
+        run: |
+          {
+            echo '### GitHub Pages'
+            echo 'Expected site: https://socium0086-arch.github.io/cn-math-taxonomy/'
+            echo 'Enable (this repo only): https://github.com/socium0086-arch/cn-math-taxonomy/settings/pages'
+            echo 'Source must be **GitHub Actions**. Enabling Pages on another repo (e.g. my-assets) will not publish this site.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

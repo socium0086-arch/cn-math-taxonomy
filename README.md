@@ -649,13 +649,27 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory /tmp/cn-math-site
 
 ## 部署（GitHub Pages）
 
-本 fork 可用 GitHub Actions 发布静态站（工作流 `.github/workflows/pages.yml`）。
+本 fork 用 GitHub Actions 发布静态站（工作流 `.github/workflows/pages.yml`）。站点挂在 **project Pages** 子路径下，不是域名根：
 
-1. 仓库 **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**（需仓库管理员操作一次）。
-2. 合并到 `main`（或手动 **Actions → Deploy GitHub Pages → Run workflow**）后发布。
-3. 站点地址：https://socium0086-arch.github.io/cn-math-taxonomy/
+**正确打开地址：** https://socium0086-arch.github.io/cn-math-taxonomy/
 
-构建脚本：`./scripts/prepare-gh-pages.sh`（生成相对路径的 `kp/` 页，兼容 project site 子路径）。
+> **注意：必须在本仓库开启 Pages。**  
+> 打开的 Settings 页面 URL 必须是  
+> https://github.com/socium0086-arch/cn-math-taxonomy/settings/pages  
+> （不要开到别的仓库，例如 `my-assets` → `…github.io/my-assets/` 不会托管本站。）
+
+一次性设置（仓库管理员）：
+
+1. 打开上面的 **cn-math-taxonomy → Settings → Pages**。
+2. **Build and deployment → Source** 选 **GitHub Actions** 并保存。
+3. 到 **Actions → Deploy GitHub Pages → Run workflow**（选 `main`）再跑一次；或 push 到 `main` 自动部署。
+4. 部署成功后打开 https://socium0086-arch.github.io/cn-math-taxonomy/ （注意末尾路径是 `/cn-math-taxonomy/`）。
+
+若看到 `Failed to create deployment (status: 404) … Ensure GitHub Pages has been enabled`，说明第 1–2 步还没在本仓库做完。
+
+**只保留一个部署工作流：** 用本仓库的 **Deploy GitHub Pages**（`pages.yml`，会生成 `kp/`）。不要启用 GitHub 模板「Deploy static content to Pages」（`static.yml`）——它会把未生成 `kp/` 的原仓库树盖到站点上，导致首页能开、`/kp/` 却 503。
+
+更细的说明见 [docs/github-pages.md](docs/github-pages.md)。构建脚本：`./scripts/prepare-gh-pages.sh`（相对路径，兼容 `/cn-math-taxonomy/` 子路径）。
 
 ## 部署（Cloudflare Pages）
 
