@@ -3,7 +3,7 @@
  * 改了 SHELL 或 DATA 列表、或数据结构变了，就把 VERSION 加一。 */
 'use strict';
 
-var VERSION = 'v27';
+var VERSION = 'v28';
 var CACHE = 'cnm-pwa-' + VERSION;
 var SCOPE = self.registration.scope;
 
@@ -123,7 +123,9 @@ self.addEventListener('fetch', function (event) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname === '/sw.js') return;
+  // Skip the worker script itself; compare against scope so project Pages
+  // (/cn-math-taxonomy/sw.js) works, not only domain-root /sw.js.
+  if (url.href === abs('sw.js')) return;
   if (req.mode === 'navigate') {
     event.respondWith(networkFirst(req, true, abs('./')));
     return;
