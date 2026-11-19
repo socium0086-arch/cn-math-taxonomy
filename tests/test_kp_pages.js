@@ -47,10 +47,10 @@ try {
     const index = fs.readFileSync(path.join(OUT, 'kp/index.html'), 'utf8');
     for (const s of SUBJECTS) {
       const n = topics.filter((t) => subjectOf(t) === s).length;
-      assert.ok(index.includes(`href="/kp/${s}"`), s);
+      assert.ok(index.includes(`href="${s}.html"`), s);
       assert.ok(index.includes(`${n} 个知识点`), s + ' 数量');
       const sp = fs.readFileSync(path.join(OUT, 'kp', s + '.html'), 'utf8');
-      const links = sp.match(/<a href="\/kp\/[a-z]{3}_[a-z0-9]+">/g) || [];
+      const links = sp.match(/<a href="[a-z]{3}_[a-z0-9]+\.html">/g) || [];
       assert.equal(links.length, n, s + ' 学科页链接数');
     }
   });
@@ -67,14 +67,17 @@ try {
       assert.ok(html.includes(`<meta property="og:url" content="${ORIGIN}/kp/${t.id}">`), 'og:url');
       assert.ok(html.includes('<meta property="og:type" content="article">'));
       assert.ok(html.includes(`content="${ORIGIN}/assets/og-cover.jpg"`));
-      assert.ok(html.includes(`href="/kp/${edge.prerequisiteId}"`), '先修链接');
+      assert.ok(html.includes(`href="${edge.prerequisiteId}.html"`), '先修链接');
       assert.ok(html.includes(esc(edge.reason)), '先修 reason');
       const pre = page(edge.prerequisiteId);
-      assert.ok(pre.includes(`href="/kp/${t.id}"`), '反向链接');
+      assert.ok(pre.includes(`href="${t.id}.html"`), '反向链接');
       const n = questions.filter((q) => q.topicId === t.id).length;
       if (n) assert.ok(html.includes(`本站共有 ${n} 道`), '配套题数');
-      const deep = s === 'math' ? `/diagnose/?target=${t.id}` : `/diagnose/?subject=${s}&amp;target=${t.id}`;
+      const deep = s === 'math'
+        ? `../diagnose/?target=${t.id}`
+        : `../diagnose/?subject=${s}&amp;target=${t.id}`;
       assert.ok(html.includes(`href="${deep}"`), '诊断深链 ' + deep);
+      assert.ok(html.includes('href="../assets/site.css"'), '相对样式路径');
       assert.match(html, /<title>[^<]+｜[^<]*知识点讲解与自测 - 中小学知识图谱<\/title>/);
     }
   });
