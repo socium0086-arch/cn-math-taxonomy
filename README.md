@@ -667,6 +667,8 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory /tmp/cn-math-site
 
 若看到 `Failed to create deployment (status: 404) … Ensure GitHub Pages has been enabled`，说明第 1–2 步还没在本仓库做完。
 
+**只保留一个部署工作流：** 用本仓库的 **Deploy GitHub Pages**（`pages.yml`，会生成 `kp/`）。不要启用 GitHub 模板「Deploy static content to Pages」（`static.yml`）——它会把未生成 `kp/` 的原仓库树盖到站点上，导致首页能开、`/kp/` 却 503。
+
 更细的说明见 [docs/github-pages.md](docs/github-pages.md)。构建脚本：`./scripts/prepare-gh-pages.sh`（相对路径，兼容 `/cn-math-taxonomy/` 子路径）。
 
 ## 部署（Cloudflare Pages）

@@ -10,6 +10,9 @@ permissions:
   pages: write
   id-token: write
 
+# Sole Pages deployer for this repo. Do not add a second workflow that also
+# uploads to github-pages (e.g. the "Deploy static content to Pages" starter):
+# that uploads the raw tree without generated kp/ and can overwrite a good deploy.
 concurrency:
   group: pages
   cancel-in-progress: true

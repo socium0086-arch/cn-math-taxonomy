@@ -50,3 +50,10 @@ Agents / 自动化 token **无法**代替你点这个开关（GitHub API 返回 
 ```
 
 本地预览与 Pages 产物相同（含相对路径的 `kp/` 页），不依赖 GitHub Pages 是否已开启。
+
+## 不要用「Deploy static content to Pages」模板
+
+GitHub 的 starter workflow（`.github/workflows/static.yml`）会把**整个仓库原样**上传，**不会**运行 `prepare-gh-pages.sh`，因此没有生成的 `kp/` 知识点页。若它和本仓库的 `pages.yml` 同时跑，后结束的那次会覆盖站点：首页可能还能打开，但 `/kp/` 会 404/503。
+
+请只保留 **Deploy GitHub Pages**（`pages.yml`）。若 Actions 里还有「Deploy static content to Pages」，删掉 `static.yml` 或在 Actions → 该 workflow → `...` → Disable。
+
