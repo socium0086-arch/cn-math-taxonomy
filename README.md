@@ -627,7 +627,38 @@ python3 -m http.server 8000
 3. 用真实学生答题数据校准诊断题与先修强度。
 
 
+## 本地预览（Web UI）
+
+仓库本身是一套纯静态站点：首页浏览入口、`explore/` 知识图谱（搜索 / 学段年级筛选 / 先修图）、`diagnose/` 自适应诊断、`kp/` 知识点索引页。
+
+本地一键预览（会生成 `kp/` 静态页并起 HTTP 服务）：
+
+```bash
+./scripts/serve-local.sh          # 默认 http://127.0.0.1:8765/
+./scripts/serve-local.sh 8080     # 自定义端口
+```
+
+只打包不启动服务：
+
+```bash
+./scripts/prepare-gh-pages.sh /tmp/cn-math-site
+python3 -m http.server 8765 --bind 127.0.0.1 --directory /tmp/cn-math-site
+```
+
+浏览器打开后：首页选学科与年级 →「知识图谱」搜索知识点 →「诊断」沿先修边自测。
+
+## 部署（GitHub Pages）
+
+本 fork 可用 GitHub Actions 发布静态站（工作流 `.github/workflows/pages.yml`）。
+
+1. 仓库 **Settings → Pages → Build and deployment → Source** 选 **GitHub Actions**（需仓库管理员操作一次）。
+2. 合并到 `main`（或手动 **Actions → Deploy GitHub Pages → Run workflow**）后发布。
+3. 站点地址：https://socium0086-arch.github.io/cn-math-taxonomy/
+
+构建脚本：`./scripts/prepare-gh-pages.sh`（生成相对路径的 `kp/` 页，兼容 project site 子路径）。
+
 ## 部署（Cloudflare Pages）
+
 
 生产站点：https://math.pansgo.com/ （Pages 项目 `cn-math-taxonomy`，备用 https://cn-math-taxonomy.pages.dev/）。
 

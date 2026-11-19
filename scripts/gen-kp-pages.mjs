@@ -8,9 +8,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const ORIGIN = 'https://math.pansgo.com';
+const DEFAULT_ORIGIN = 'https://math.pansgo.com';
 const SITE_TITLE = '中小学知识图谱';
-const OG_IMAGE = ORIGIN + '/assets/og-cover.jpg';
+let ORIGIN = DEFAULT_ORIGIN;
+let OG_IMAGE = ORIGIN + '/assets/og-cover.jpg';
+/** When true, sitemap/canonical use .html (GitHub Pages project sites). Page hrefs always use relative .html. */
+let HTML_SUFFIX = false;
 
 /* 学科顺序与 explore 页导航一致；中文名与诊断页/错题本一致。 */
 const SUBJECTS = [
@@ -28,17 +31,26 @@ const MAIN_PAGES = [
 
 function parseArgs(argv) {
   let out = path.join(process.cwd(), 'kp-out');
+  let origin = DEFAULT_ORIGIN;
+  let htmlSuffix = false;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--out') {
       if (!argv[i + 1]) throw new Error('--out 缺少目录参数');
       out = path.resolve(argv[++i]);
     } else if (argv[i].startsWith('--out=')) {
       out = path.resolve(argv[i].slice(6));
+    } else if (argv[i] === '--origin') {
+      if (!argv[i + 1]) throw new Error('--origin 缺少参数');
+      origin = String(argv[++i]).replace(/\/$/, '');
+    } else if (argv[i].startsWith('--origin=')) {
+      origin = argv[i].slice(9).replace(/\/$/, '');
+    } else if (argv[i] === '--html-suffix') {
+      htmlSuffix = true;
     } else {
       throw new Error('未知参数：' + argv[i]);
     }
   }
-  return { out };
+  return { out, origin, htmlSuffix };
 }
 
 const esc = (s) => String(s ?? '')
@@ -80,8 +92,18 @@ function gradeLabel(t) {
   return '';
 }
 
-const kpPath = (id) => '/kp/' + id;
-const kpUrl = (id) => ORIGIN + kpPath(id);
+/** In-page links stay relative so the site works on /repo/ GitHub Pages and at domain root. */
+const kpHref = (id) => id + '.html';
+const kpIndexHref = () => './';
+const kpSubjectHref = (subject) => subject + '.html';
+const siteHref = (p) => {
+  if (p === '/') return '../';
+  if (p.startsWith('/')) return '..' + p;
+  return p;
+};
+const kpUrl = (id) => ORIGIN + '/kp/' + id + (HTML_SUFFIX ? '.html' : '');
+const kpIndexUrl = () => ORIGIN + '/kp/' + (HTML_SUFFIX ? 'index.html' : '');
+const kpSubjectUrl = (subject) => ORIGIN + '/kp/' + subject + (HTML_SUFFIX ? '.html' : '');
 
 function pageShell({ title, description, canonical, ogType, subject, body }) {
   return `<!DOCTYPE html>
@@ -98,16 +120,16 @@ function pageShell({ title, description, canonical, ogType, subject, body }) {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
 <meta property="og:image" content="${OG_IMAGE}">
-<link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
-<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
 <meta name="theme-color" content="#0f6e62">
-<link rel="stylesheet" href="/assets/site.css">
-<link rel="stylesheet" href="/assets/kp.css">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/kp.css">
 </head>
 <body class="page-kp${subject && subject !== 'math' ? ' subject-' + subject : ''}">
 <header class="site-header">
-  <a class="brand" href="/">
+  <a class="brand" href="../">
     <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path fill="var(--logo-sheet)" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M6.6 4.8H17L27.4 15.2V25Q27.4 27.4 25.2 27.4H6.6Q4.4 27.4 4.4 25.2V7Q4.4 4.8 6.6 4.8Z"/><path fill="var(--logo-fold)" d="M17.7 6.3 26.1 14.7H17.7Z"/><path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="M17.7 6.3V14.7H26.1"/><path fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" d="M8.3 24.2H12.4Q14.2 24.2 14.2 22.4V20.2Q14.2 18.6 16 18.6H18.8"/><path fill="currentColor" d="M18.5 16.85 23 18.6 18.5 20.35Z"/></svg>
     <span class="brand-copy">
       <span class="brand-name">中小学·高中知识图谱</span>
@@ -116,13 +138,13 @@ function pageShell({ title, description, canonical, ogType, subject, body }) {
   </a>
   <nav class="site-nav" aria-label="主导航">
     <div class="page-links">
-      <a class="nav-link" href="/">首页</a>
-      <a class="nav-link" href="/explore/">知识图谱</a>
-      <a class="nav-link" href="/diagnose/">诊断</a>
-      <a class="nav-link" href="/children/">档案</a>
-      <a class="nav-link" href="/wrongbook/">错题本</a>
-      <a class="nav-link" href="/goods/">学习好物</a>
-      <a class="nav-link active" href="/kp/" aria-current="page">知识点索引</a>
+      <a class="nav-link" href="../">首页</a>
+      <a class="nav-link" href="../explore/">知识图谱</a>
+      <a class="nav-link" href="../diagnose/">诊断</a>
+      <a class="nav-link" href="../children/">档案</a>
+      <a class="nav-link" href="../wrongbook/">错题本</a>
+      <a class="nav-link" href="../goods/">学习好物</a>
+      <a class="nav-link active" href="./" aria-current="page">知识点索引</a>
     </div>
   </nav>
 </header>
@@ -130,7 +152,7 @@ function pageShell({ title, description, canonical, ogType, subject, body }) {
 ${body}
 </main>
 <footer class="site-footer">
-  <p><a href="/kp/">返回知识点索引</a> · <a href="/">返回首页</a></p>
+  <p><a href="./">返回知识点索引</a> · <a href="../">返回首页</a></p>
 </footer>
 </body>
 </html>
@@ -179,7 +201,7 @@ function topicPage(t, ctx) {
     const items = pre.map((e) => {
       const p = ctx.byId.get(e.prerequisiteId);
       const reason = e.reason || `学习「${t.name}」需要先掌握「${p.name}」。`;
-      return `<li><a href="${kpPath(p.id)}">${esc(p.name)}</a><span class="kp-reason">${esc(reason)}</span></li>`;
+      return `<li><a href="${kpHref(p.id)}">${esc(p.name)}</a><span class="kp-reason">${esc(reason)}</span></li>`;
     });
     sections.push(`<section class="kp-sec"><h2>先修知识点</h2><ul class="kp-links">${items.join('')}</ul></section>`);
   }
@@ -188,23 +210,23 @@ function topicPage(t, ctx) {
   if (post.length) {
     const items = post.map((id) => {
       const n = ctx.byId.get(id);
-      return `<li><a href="${kpPath(n.id)}">${esc(n.name)}</a></li>`;
+      return `<li><a href="${kpHref(n.id)}">${esc(n.name)}</a></li>`;
     });
     sections.push(`<section class="kp-sec"><h2>学完这个之后</h2><ul class="kp-links kp-plain">${items.join('')}</ul></section>`);
   }
 
   const n = ctx.qcount.get(t.id) || 0;
   const diag = subject === 'math'
-    ? `/diagnose/?target=${t.id}`
-    : `/diagnose/?subject=${subject}&target=${t.id}`;
+    ? siteHref('/diagnose/') + '?target=' + encodeURIComponent(t.id)
+    : siteHref('/diagnose/') + '?subject=' + encodeURIComponent(subject) + '&target=' + encodeURIComponent(t.id);
   const practice = n > 0
     ? `本站共有 ${n} 道「${esc(t.name)}」的配套题。`
     : `「${esc(t.name)}」暂无题库配套题，可直接进入诊断，系统会沿先修关系为你出题。`;
   sections.push(`<section class="kp-sec"><h2>配套练习</h2><p>${practice}</p><p><a class="btn btn-lg" href="${esc(diag)}">开始诊断自测</a></p></section>`);
 
   const body = `${breadcrumb([
-    { text: '首页', href: '/' }, { text: '知识点索引', href: '/kp/' },
-    { text: subjectName, href: '/kp/' + subject }, { text: t.name }
+    { text: '首页', href: siteHref('/') }, { text: '知识点索引', href: kpIndexHref() },
+    { text: subjectName, href: kpSubjectHref(subject) }, { text: t.name }
   ])}
 <h1>${esc(t.name)}</h1>
 <p class="kp-info">${info.map(esc).join(' · ')}</p>
@@ -229,14 +251,14 @@ function subjectPage(subject, topics) {
   const ordered = [...groups.values()].sort((a, b) => a.g - b.g || (SEMESTER_ORDER[a.sem] ?? 9) - (SEMESTER_ORDER[b.sem] ?? 9));
   const html = ordered.map((grp) => {
     const chapters = [...grp.chapters.entries()].map(([ch, list]) =>
-      `<h3>${esc(ch)}</h3><ul class="kp-grid">${list.map((t) => `<li><a href="${kpPath(t.id)}">${esc(t.name)}</a></li>`).join('')}</ul>`).join('\n');
+      `<h3>${esc(ch)}</h3><ul class="kp-grid">${list.map((t) => `<li><a href="${kpHref(t.id)}">${esc(t.name)}</a></li>`).join('')}</ul>`).join('\n');
     return `<section class="kp-sec"><h2>${esc(grp.label)}</h2>\n${chapters}</section>`;
   }).join('\n');
-  const body = `${breadcrumb([{ text: '首页', href: '/' }, { text: '知识点索引', href: '/kp/' }, { text: name }])}
+  const body = `${breadcrumb([{ text: '首页', href: siteHref('/') }, { text: '知识点索引', href: kpIndexHref() }, { text: name }])}
 <h1>${esc(name)}知识点索引</h1>
 <p class="kp-info">共 ${topics.length} 个知识点，按年级与教材章节排列</p>
 ${html}`;
-  return pageShell({ title, description, canonical: ORIGIN + '/kp/' + subject, ogType: 'website', subject, body });
+  return pageShell({ title, description, canonical: kpSubjectUrl(subject), ogType: 'website', subject, body });
 }
 
 function indexPage(counts) {
@@ -244,14 +266,14 @@ function indexPage(counts) {
   const title = `知识点索引｜中小学全学科知识点讲解与自测 - ${SITE_TITLE}`;
   const description = `覆盖数学、语文、英语等 ${SUBJECTS.length} 个学科共 ${total} 个知识点，每个知识点附讲解、掌握标准、自测题和先修关系。`;
   const cards = SUBJECTS.map(([k, name]) =>
-    `<li><a class="kp-card" href="/kp/${k}"><strong>${esc(name)}</strong><span>${counts[k]} 个知识点</span></a></li>`).join('\n');
-  const body = `${breadcrumb([{ text: '首页', href: '/' }, { text: '知识点索引' }])}
+    `<li><a class="kp-card" href="${kpSubjectHref(k)}"><strong>${esc(name)}</strong><span>${counts[k]} 个知识点</span></a></li>`).join('\n');
+  const body = `${breadcrumb([{ text: '首页', href: siteHref('/') }, { text: '知识点索引' }])}
 <h1>知识点索引</h1>
 <p class="kp-info">${SUBJECTS.length} 个学科，共 ${total} 个知识点。选一个学科，查看按年级和章节排列的全部知识点。</p>
 <ul class="kp-cards">
 ${cards}
 </ul>`;
-  return pageShell({ title, description, canonical: ORIGIN + '/kp/', ogType: 'website', subject: '', body });
+  return pageShell({ title, description, canonical: kpIndexUrl(), ogType: 'website', subject: '', body });
 }
 
 function sitemapXml(entries) {
@@ -265,7 +287,12 @@ function write(file, content) {
 }
 
 function main() {
-  const { out } = parseArgs(process.argv.slice(2));
+  const args = parseArgs(process.argv.slice(2));
+  const out = args.out;
+  ORIGIN = args.origin;
+  HTML_SUFFIX = args.htmlSuffix;
+  OG_IMAGE = ORIGIN + '/assets/og-cover.jpg';
+
   const topics = readJson('data/topics.json');
   const deps = readJson('data/dependencies.json');
   const questions = readJson('data/questions.json');
@@ -300,8 +327,8 @@ function main() {
 
   const entries = [
     ...MAIN_PAGES.map(([p, pri]) => [ORIGIN + p, pri]),
-    [ORIGIN + '/kp/', '0.9'],
-    ...SUBJECTS.map(([k]) => [ORIGIN + '/kp/' + k, '0.9']),
+    [kpIndexUrl(), '0.9'],
+    ...SUBJECTS.map(([k]) => [kpSubjectUrl(k), '0.9']),
     ...topics.map((t) => [kpUrl(t.id), '0.8'])
   ];
   const skipped = [];
